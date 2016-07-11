@@ -1,0 +1,35 @@
+<link rel="stylesheet" type="text/css" href="inventory/css/inventory.css">
+
+<script type="text/javascript">
+  \$LAB.script("inventory/js/inventory.js");
+</script>
+
+#filter CleanOutput
+<table class="inventory table table-striped table-bordered table-rounded table-condensed">
+  <tr>
+    <th>Hostname</th>
+    <th>Address</th>
+    <th>OS</th>
+  </tr>
+  #for $host, $address, $os in $inventory
+  <tr>
+    <td>$host</td>
+    <td>$address</td>
+    <td>$os</td>
+  </tr>
+  #end for
+</table>
+
+<button class="create btn btn-primary"><i class="fa fa-plus"></i> Create</button>
+
+<div id="inventory-dialog" title="New host" style="display: none;">
+  <form method="post">
+    #for $label, $name in ("Hostname", "hostname"), ("Address", "address"), ("OS", "os")
+    <div class="form-group">
+      <label>$label:</label>
+      <input type="text" class="form-control" name="$name"/>
+    </div>
+    #end for
+  </form>
+</div>
+#end filter
