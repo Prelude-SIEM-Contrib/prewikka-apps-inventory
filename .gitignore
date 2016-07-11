@@ -1,0 +1,5 @@
+*~
+build
+prewikka_plugins.egg-info
+*/templates/*.py
+!__init__.py
