@@ -1,11 +1,10 @@
-$(document).on("click", "button.create", function() {
-    $("div#inventory-dialog").last().dialog({
-        "buttons": [{
-            "class": 'btn btn-default',
-            "text": "OK",
-            "click": function() {
-                $(this).find("form").submit();
+function init_inventory(title, url) {
+    $(".inventory-create").click(function() {
+        prewikka_widget({
+            url: url,
+            dialog: {
+                title: title
             }
-        }]
+        });
     });
-});
+};

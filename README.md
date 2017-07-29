@@ -2,7 +2,7 @@
 
 ### Requirements
 
-You need Prewikka 3.0.0 or higher.
+You need Prewikka 4.0.0 or higher.
 
 ### Source
 
@@ -14,13 +14,9 @@ The git repo for Prewikka apps is available on [GitHub](https://github.com/Prelu
 
 Once the source code downloaded:
 
-    cd prewikka-apps-inventory
-    cheetah-compile */templates/*.tmpl
     python setup.py install
 
-Then restart Prewikka.
-
-Depending on the app, you may need to activate it by visiting the Settings > Plugins page.
+Then restart Prewikka. You need to activate it by visiting the "?" > Apps page.
 
 ### License
 

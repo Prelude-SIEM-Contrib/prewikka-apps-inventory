@@ -1,9 +1,10 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import pkg_resources
+
+from prewikka import version, view, template, hookmanager, database, response
+
 """A basic inventory plugin"""
-from pkg_resources import resource_filename
-
-from prewikka import database, env, utils, view
-from . import templates
-
 
 class InventoryParameters(view.Parameters):
     """A class that handles HTTP parameters for the Inventory view"""
@@ -14,45 +15,48 @@ class InventoryParameters(view.Parameters):
         self.optional("address", str)
         self.optional("os", str)
 
-
 class Inventory(view.View):
-    """The main Inventory view"""
     plugin_name = "Inventory"
-    plugin_author = "Antoine Luong"
-    plugin_license = "GPL"
-    plugin_version = "1.0.0"
-    plugin_copyright = "CSSI"
-    plugin_description = "A basic inventory plugin"
+    plugin_author = "Antoine Luong, Thomas Andrejak"
+    plugin_license = version.__license__
+    plugin_version = version.__version__
+    plugin_copyright = version.__copyright__
+    plugin_description = N_("A basic inventory plugin")
+    plugin_database_branch = version.__branch__
     plugin_database_version = "0"
-    plugin_htdocs = (("inventory", resource_filename(__name__, 'htdocs')),)
-    view_name = "Inventory"
-    view_section = "Inventory"
-    view_template = templates.inventory
+    plugin_htdocs = (("inventory", pkg_resources.resource_filename(__name__, 'htdocs')),)
+
     view_parameters = InventoryParameters
 
     def __init__(self):
         view.View.__init__(self)
         self._db = InventoryDatabase()
-        self._config = getattr(env.config, 'inventory', {})
-        env.hookmgr.declare_once("HOOK_LINK")
-        env.hookmgr.register("HOOK_LINK", self._get_inventory_link)
+        self._config = env.config.inventory
 
+    @hookmanager.register("HOOK_LINK")
     def _get_inventory_link(self, value):
         """Create a link to the inventory to be displayed in the alert view"""
         return ("host",
                 "Search in inventory",
-                utils.create_link(self.view_path, {"search": value}),
+                url_for("Inventory.render", search=value),
                 False)
 
+    @view.route("/inventory", methods=['GET','POST'], menu=(N_('Inventory'), N_('Inventory')))
     def render(self):
-        params = self.parameters
-        if "hostname" in params:
-            self._db.add_host(params.get("hostname"),
-                              params.get("address"),
-                              params.get("os"))
-        self.dataset["inventory"] = self._db.get_hosts(params.get("search"))
-        self.dataset["title"] = self._config.get("title", "Inventory")
+        dataset = {}
+        if "hostname" in env.request.parameters:
+            self._db.add_host(env.request.parameters.get("hostname"),
+                              env.request.parameters.get("address"),
+                              env.request.parameters.get("os"))
+            return response.PrewikkaRedirectResponse(url_for("."))
 
+        dataset["inventory"] = self._db.get_hosts(env.request.parameters.get("search"))
+        dataset["title"] = self._config.get("title", "Inventory")
+        return template.PrewikkaTemplate(__name__, "templates/inventory.mak").render(**dataset)
+
+    @view.route("/inventory/new")
+    def new(self):
+        return template.PrewikkaTemplate(__name__, "templates/newhost.mak").render()
 
 class InventoryDatabase(database.DatabaseHelper):
     """Handle database queries related to the inventory"""
