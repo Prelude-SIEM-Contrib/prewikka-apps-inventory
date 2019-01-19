@@ -1,10 +1,3 @@
-function init_inventory(title, url) {
-    $(".inventory-create").click(function() {
-        prewikka_widget({
-            url: url,
-            dialog: {
-                title: title
-            }
-        });
-    });
-};
+$(document).on("click", "button.create", function() {
+    $("div#inventory-dialog").modal("show");
+});

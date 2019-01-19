@@ -1,5 +1,5 @@
 *~
 build
-prewikka_plugins.egg-info
-*/templates/*.py
+dist
+prewikka_apps_inventory.egg-info
 !__init__.py

@@ -2,61 +2,46 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import pkg_resources
 
-from prewikka import version, view, template, hookmanager, database, response
+from prewikka import database, hookmanager, response, template, view
 
 """A basic inventory plugin"""
-
-class InventoryParameters(view.Parameters):
-    """A class that handles HTTP parameters for the Inventory view"""
-
-    def register(self):
-        self.optional("search", str)
-        self.optional("hostname", str)
-        self.optional("address", str)
-        self.optional("os", str)
 
 class Inventory(view.View):
     plugin_name = "Inventory"
     plugin_author = "Antoine Luong, Thomas Andrejak"
-    plugin_license = version.__license__
-    plugin_version = version.__version__
-    plugin_copyright = version.__copyright__
-    plugin_description = N_("A basic inventory plugin")
-    plugin_database_branch = version.__branch__
+    plugin_license = "GPL"
+    plugin_version = "5.0.0"
+    plugin_copyright = "CSSI"
+    plugin_description = "A basic inventory plugin"
     plugin_database_version = "0"
     plugin_htdocs = (("inventory", pkg_resources.resource_filename(__name__, 'htdocs')),)
-
-    view_parameters = InventoryParameters
 
     def __init__(self):
         view.View.__init__(self)
         self._db = InventoryDatabase()
-        self._config = env.config.inventory
+        self._title = env.config.inventory.get("title", "Inventory")
 
-    @hookmanager.register("HOOK_LINK")
-    def _get_inventory_link(self, value):
-        """Create a link to the inventory to be displayed in the alert view"""
-        return ("host",
-                "Search in inventory",
-                url_for("Inventory.render", search=value),
-                False)
+        paths = [
+            "alert.source.node.address.address",
+            "alert.source.node.name",
+            "alert.target.node.address.address",
+            "alert.target.node.name",
+        ]
+        env.linkmanager.add_link("Search in inventory", paths, lambda x: url_for("Inventory.hosts", search=x))
 
-    @view.route("/inventory", methods=['GET','POST'], menu=(N_('Inventory'), N_('Inventory')))
-    def render(self):
-        dataset = {}
-        if "hostname" in env.request.parameters:
-            self._db.add_host(env.request.parameters.get("hostname"),
-                              env.request.parameters.get("address"),
-                              env.request.parameters.get("os"))
-            return response.PrewikkaRedirectResponse(url_for("."))
+    @view.route("/inventory/save", methods=["POST"])
+    def save(self):
+        self._db.add_host(env.request.parameters["hostname"],
+                          env.request.parameters.get("address"),
+                          env.request.parameters.get("os"))
+        return response.PrewikkaRedirectResponse(url_for("Inventory.hosts"))
 
-        dataset["inventory"] = self._db.get_hosts(env.request.parameters.get("search"))
-        dataset["title"] = self._config.get("title", "Inventory")
-        return template.PrewikkaTemplate(__name__, "templates/inventory.mak").render(**dataset)
+    @view.route("/inventory/hosts", menu=("Inventory", "Inventory"))
+    def hosts(self):
+        tmpl = template.PrewikkaTemplate(__name__, "templates/inventory.mak")
+        inventory = self._db.get_hosts(env.request.parameters.get("search"))
+        return tmpl.render(inventory=inventory, title=self._title)
 
-    @view.route("/inventory/new")
-    def new(self):
-        return template.PrewikkaTemplate(__name__, "templates/newhost.mak").render()
 
 class InventoryDatabase(database.DatabaseHelper):
     """Handle database queries related to the inventory"""
@@ -67,13 +52,10 @@ class InventoryDatabase(database.DatabaseHelper):
         if keyword:
             query += (" WHERE hostname = %(keyword)s"
                       " OR address = %(keyword)s"
-                      " OR os = %(keyword)s" %
-                      {"keyword": self.escape(keyword)})
-        return self.query(query)
+                      " OR os = %(keyword)s")
+        return self.query(query, keyword=keyword)
 
     def add_host(self, hostname, address, os):
         """Add a host to the inventory database"""
         self.query("INSERT INTO Prewikka_Inventory (hostname, address, os) "
-                   "VALUES (%s, %s, %s)" % (self.escape(hostname),
-                                            self.escape(address),
-                                            self.escape(os)))
+                   "VALUES (%s, %s, %s)", hostname, address, os)

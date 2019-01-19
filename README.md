@@ -2,7 +2,7 @@
 
 ### Requirements
 
-You need Prewikka 4.0.0 or higher.
+You need Prewikka 5.0.0 or higher.
 
 ### Source
 
